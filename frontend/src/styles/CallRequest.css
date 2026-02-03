@@ -1,0 +1,30 @@
+/* Simple modal styles aligned with PhotoRequest */
+.call-request-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.call-request-modal {
+  background: #fff;
+  width: 360px;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+}
+
+.call-request-modal h3 { margin: 0 0 12px; }
+
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; margin-bottom: 6px; color: #333; }
+.form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+
+.form-actions { display: flex; gap: 10px; }
+.form-actions button { padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; background: #667eea; color: white; }
+.form-actions button:hover { background: #764ba2; }
+
+.form-message { margin-top: 10px; color: #666; }
