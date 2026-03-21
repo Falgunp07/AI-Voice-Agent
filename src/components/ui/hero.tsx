@@ -94,8 +94,8 @@ export const Hero = () => {
                     </div>
                 </div>
 
-                {/* 3D Dashboard Mockup */}
-                <div className="relative w-full max-w-5xl mx-auto perspective-[2000px]">
+                {/* 3D Dashboard Mockup — hidden on mobile */}
+                <div className="hidden md:block relative w-full max-w-5xl mx-auto perspective-[2000px]">
                     <div className="relative rounded-xl border border-white/10 bg-slate-950/50 backdrop-blur-xl shadow-2xl transform rotate-x-[20deg] scale-95 opacity-90 transition-all duration-1000 hover:rotate-x-0 hover:scale-100 hover:opacity-100 group">
                         {/* Glow Behind */}
                         <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 rounded-xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
@@ -176,6 +176,7 @@ export const Hero = () => {
                         </div>
                     </div>
                 </div>
+
             </div>
         </section>
     );
