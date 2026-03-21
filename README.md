@@ -1,6 +1,6 @@
 # PropCall AI - Real Estate Voice Agent Platform
 
-An AI-powered voice agent platform that automates customer support for real estate businesses.
+An advanced AI-powered voice agent platform built with Next.js, Node.js, and Supabase. Seamlessly integrates Twilio WebSockets, Deepgram STT, and Sarvam TTS to conduct real-time, zero-latency phone calls in multiple languages, automating customer support for real estate businesses.
 
 ## 🚀 Features
 
@@ -14,6 +14,7 @@ An AI-powered voice agent platform that automates customer support for real esta
 
 - **Frontend**: Next.js 15, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: (To be decided: Node.js or Python)
+- **Voice Stack**: Twilio WebSockets, Deepgram STT, Sarvam TTS
 - **Database**: PostgreSQL (Supabase)
 - **Storage**: Supabase Storage
 - **Hosting**: Vercel (frontend), Supabase (backend)
@@ -69,3 +70,4 @@ MIT
 ## 👥 Author
 
 Built as a learning project
+
