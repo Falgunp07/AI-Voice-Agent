@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+@theme {
+    --color-background: #020617;
+    /* Slate 950 - Deep Space */
+    --color-foreground: #f8fafc;
+    /* Slate 50 */
+
+    --color-card: #0f172a;
+    /* Slate 900 */
+    --color-card-foreground: #f8fafc;
+
+    --color-popover: #0f172a;
+    --color-popover-foreground: #f8fafc;
+
+    --color-primary: #6366f1;
+    /* Indigo 500 */
+    --color-primary-foreground: #ffffff;
+
+    --color-secondary: #0ea5e9;
+    /* Sky 500 */
+    --color-secondary-foreground: #ffffff;
+
+    --color-muted: #1e293b;
+    /* Slate 800 */
+    --color-muted-foreground: #94a3b8;
+    /* Slate 400 */
+
+    --color-accent: #1e293b;
+    --color-accent-foreground: #f8fafc;
+
+    --color-destructive: #ef4444;
+    --color-destructive-foreground: #f8fafc;
+
+    --color-border: #1e293b;
+    --color-input: #1e293b;
+    --color-ring: #6366f1;
+
+    --radius-lg: 0.5rem;
+    --radius-md: calc(0.5rem - 2px);
+    --radius-sm: calc(0.5rem - 4px);
+
+    --animate-blob: blob 7s infinite;
+
+    @keyframes blob {
+        0% {
+            transform: translate(0px, 0px) scale(1);
+        }
+
+        33% {
+            transform: translate(30px, -50px) scale(1.1);
+        }
+
+        66% {
+            transform: translate(-20px, 20px) scale(0.9);
+        }
+
+        100% {
+            transform: translate(0px, 0px) scale(1);
+        }
+    }
+}
+
+@layer base {
+    :root {
+        --background: 222.2 84% 4.9%;
+        --foreground: 210 40% 98%;
+    }
+
+    body {
+        @apply bg-background text-foreground antialiased selection:bg-indigo-500/30 selection:text-indigo-200;
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+}
+
+@layer utilities {
+    .bg-grid-white {
+        background-size: 40px 40px;
+        background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    }
+
+    .bg-grid-indigo {
+        background-size: 40px 40px;
+        background-image: linear-gradient(to right, rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(99, 102, 241, 0.1) 1px, transparent 1px);
+    }
+
+    .bg-noise {
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+    }
+
+    .text-balance {
+        text-wrap: balance;
+    }
+
+    .glass-card {
+        @apply bg-slate-900/50 backdrop-blur-xl border border-white/10 shadow-xl;
+    }
+}
