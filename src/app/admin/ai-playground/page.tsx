@@ -285,7 +285,7 @@ export default function AIPlaygroundPage() {
                                 </div>
                                 <div>
                                     <h3 className="font-semibold text-sm">Arjun — PropCall AI Agent</h3>
-                                    <p className="text-xs text-slate-500">Powered by Groq • Llama 3.3 70B</p>
+                                    <p className="text-xs text-slate-500">Powered by Sarvam-M • Native Hindi AI</p>
                                 </div>
                                 {isSpeaking && (
                                     <div className="flex items-center gap-1 ml-2">

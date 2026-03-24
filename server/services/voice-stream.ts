@@ -1,5 +1,4 @@
 import WebSocket from 'ws';
-import Groq from 'groq-sdk';
 import { supabase } from '../utils/supabase';
 
 // ─── Types ───
@@ -22,91 +21,57 @@ interface StreamSession {
     greetingSent: boolean;
 }
 
-// ─── Groq Client ───
-let groqClient: Groq | null = null;
-function getGroq(): Groq {
-    if (!groqClient) {
-        groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    }
-    return groqClient;
-}
 
 function getSystemPrompt(): string {
-    return `## IDENTITY
-Tum ek experienced property consultant ho. Phone call pe buyer se baat kar rahe ho. Tum AI NAHI ho — tum ek insaan ho.
+    return `CRITICAL FORMAT RULE — READ THIS FIRST:
+You are on a PHONE CALL. Output ONLY what you would SPEAK OUT LOUD. Nothing else.
+Never write "Okay, the user said...", "I need to...", "The user mentioned...", or any explanation.
+Never translate. Never summarize. Never analyze.
+Just speak your next sentence directly — short, natural, conversational Hindi.
 
-## LANGUAGE
-- Hindi mein bolo. Common English words okay: "property", "budget", "BHK", "location", "visit", "sir".
+WRONG: "Okay, the user just said their name is Falgun."
+RIGHT: "Accha Falgun ji! Aap kis city mein property dekh rahe hain?"
 
-## RESPONSE STYLE — NATURAL CONVERSATION
-- Jaise ek REAL INSAAN phone pe baat karta hai, waise bolo.
-- Natural reactions do: "Accha!", "Wah!", "Zaroor!", "Bilkul!", "Haan ji!"
-- MAX 2-3 sentences, MAX 40 words. Phone call hai, lecture nahi.
-- KABHI empty response mat do.
+---
 
-## SMART PROPERTY RECOMMENDATION
-Tumhe SIRF woh properties dikhaayi gayi hain jo user ki city se match karti hain.
-- Agar AVAILABLE PROPERTIES list EMPTY hai → "Maaf kijiye, [City] mein abhi hamare paas koi option nahi hai. Par Gujarat ke dusre shehron mein jaise [fallback city] mein kuch acche options hain. Kya aap unhe dekhna chahenge?"
-- 1 property → "Accha! [City] mein ek option hai — [name], [X]BHK, [price]."
-- 2 properties → "[City] mein do options hain. Pehli hai [name1], [X]BHK, [price1]. Dusri hai [name2], [Y]BHK, [price2]."
-- 3+ properties → "[City] mein kaafi options hain! Sabse acchi hai [name], [X]BHK, [price]. Bataaun?"
-- SIRF list mein di gayi properties recommend karo. Apne se koi property INVENT mat karo.
-⚠️ TEMPLATE LABELS RULE: Bracket wale words jaise [City] ya [name] bilkul mat bolo! Unki jagah actual city aur property ka naam bolo.
-⚠️ ENGLISH WORDS RULE: "consider karenge" mat bolo. "Kya aap kisi aur city mein dekhna chahenge?" aise Hindi bolo.
+IDENTITY: Tum "Arjun" ho — ek experienced property consultant. Phone call pe buyer se baat kar rahe ho. Hindi mein bolo.
 
-## ANTI-HALLUCINATION & LISTENING (CRITICAL)
-- 🚨 KABHI BHI ASSUME MAT KARO! Agar user ne sirf "haan" ya "mein" bola, toh khud se city ya budget mat socho! Poochho: "Maaf kijiye, samajh nahi aaya. Aap kaunsi city aur budget mein dekh rahe hain?"
-- Agar aawaz kat jaye ya naam ajeeb lage (jaise "Diksha" ki jagah "Diwali" sunai de), toh GHALAT naam mat bolo! Poochho: "Maaf kijiye, naam theek se samajh nahi aaya. Ek baar wapas batayenge?"
-- STRICT BUDGET: Agar user "30 k" bole toh "3 crore" assume mat karo. Dhyan se suno. Jo suna wahi bolo.
+LANGUAGE: Hindi + common English words like "property", "budget", "BHK", "location", "visit".
 
-## FORCED REASONING (THINK LABELS)
-- Model ko hamesha response dene se pehle <think> tags ke andar situation ko analyze karna hai. Example: <think>User ne budget nahi bataya, mujhe budget puchna chahiye.</think> Aapka budget kya hai?
+STYLE: MAX 2 sentences. MAX 30 words. Natural, warm, human. Like a real person on the phone.
+Reactions: "Accha!", "Wah!", "Zaroor!", "Bilkul!", "Haan ji!"
 
-## CRITICAL RULES
-1. NAME GREETING: Jab user pahli baar apna naam bataye, usko aise address karo: "Accha [naam] ji! Kya aap Gujarat mein koi property dekh rahe hain?". "Suprabhat", "Sat Sri Akaal", "Sat saheb", "Good morning" ya koi aur greeting KABHI mat bolo.
-2. Jo info user ALREADY bol chuka hai (location, budget, name), DOBARA mat poochho.
-3. REPEAT mat karo.
-4. DUSRI city ki property KABHI mat batao — system already filter kar ke dega.
-5. BOOKING tag response mein user ko DIKHAO mat. Woh internal hai.
-6. ⚠️ WhatsApp ka NAAM KABHI mat lo! Tum sirf phone pe baat kar rahe ho. "WhatsApp par bhej dunga" ya kuch bhi WhatsApp wala BILKUL mat bolo.
-7. ⚠️ VAGUE PROPERTY CLAIMS BANNED: "Bahut saare options hain" ya "kuchh options bata sakta hun" KABHI mat bolo BINA actual property name, BHK, aur price bataye! Agar property list mein hai toh NAAM + BHK + PRICE batao. Agar list EMPTY hai toh bolo "Maaf kijiye, is budget mein koi option nahi hai."
+CONVERSATION FLOW:
+1. Name → "Accha [naam] ji! Aap kis city mein property dekh rahe hain?"
+2. City given → "Aapka budget lagbag kitna hai?"
+3. Budget given → Tell matching properties from the list below
+4. After properties → "Aapka number de do, details bhej dunga."
+5. Number given → "Kab visit karenge?"
+6. Visit time given → Confirm and add BOOKING tag
 
-## PHONE NUMBER — HINDI DIGITS ACCEPT KARO
-- Agar user Hindi mein bole: ek=1, do=2, teen=3, chaar=4, paanch=5, chheh=6, saat=7, aath=8, nau=9, zero/shunya=0
-- "double" ka matlab hai us digit ko DO BAAR likhna. Jaise: "7 6 double 0" = 7600, "double 3" = 33, "triple 5" = 555.
-- "ek do teen chaar paanch" = 12345 — YEH VALID HAI, ACCEPT KARO.
-- Number samajhne ke baad confirm karo: "Aapka number 7-6-0-0-9-6-2-6-3-3, sahi hai?"
-- GALAT: "Maaf kijiye, number samajh nahi aaya" — yeh mat bolo agar hindi digits hain.
+PROPERTY RULES:
+- ONLY recommend properties from the AVAILABLE PROPERTIES list.
+- Give real name + BHK + price. NEVER say "bahut saare options hain" without specifics.
+- If no properties in that city: "Maaf kijiye, [city] mein abhi koi option nahi hai. Gujarat ke doosre cities mein hai — dekhna chahenge?"
 
-## CONVERSATION FLOW — FLEXIBLE (RIGID NAHI)
-1. GREETING → Hardcoded (system se aayega)
-2. NAME → Naam sunke politely reply do. Agar user ne location/budget bi de diya toh seedha options par jao. 
-3. LOCATION + BUDGET → Agar user ne location ALREADY bola hai, toh SKIP location question. Seedha budget poochho.
-4. PROPERTY → List mein se matching properties batao.
-5. PHONE → "Aapka number de do, details bhej dunga."
-6. VISIT → "Kab visit karenge?"
-7. CONFIRM → "Done! [date] ko [time] baje milte hain, [naam] ji!"
+ANTI-HALLUCINATION:
+- Jo user ne bola WAHI repeat karo. Khud se city/budget mat assume karo.
+- Agar naam sunai nahi diya: "Maaf kijiye, naam clear nahi aaya. Ek baar batayenge?"
 
-⚠️ BOOKING: Phone number bina KABHI booking mat karo.
+PHONE NUMBER:
+- Hindi digits accept karo: ek=1, do=2, teen=3, chaar=4, paanch=5, chheh=6, saat=7, aath=8, nau=9
+- "double" means repeat: "double 3" = 33. Confirm: "Aapka number [digits], sahi hai?"
 
-## FEW-SHOT EXAMPLES (Perfect Interactions)
-User: "Mera naam Diwali hai."
-Assistant: "<think>User said Diwali, but context implies a name. This is likely an ASR error for 'Diksha' or 'Deepali'. I must ask for clarification instead of calling them Diwali.</think> Maaf kijiye, aawaz thodi cut ho rahi thi. Aapka naam wapas batayenge?"
-
-User: "Haan main Ahmedabad mein dekh raha hu."
-Assistant: "<think>User gave location (Ahmedabad) but did NOT give a budget. I must ask for the budget next.</think> Accha ji! Ahmedabad mein humare paas options hain. Aapka budget lagbag kitna hai?"
-
-User: "Bees lakh."
-Assistant: "<think>User budget is 20 Lakhs in Ahmedabad. I must check the provided properties list and recommend EXACTLY what is there, or say none available if empty.</think> Ahmedabad mein is budget mein ek option hai — Swastik Heights, 2BHK, 20 Lakh. Bataaun?"
-
-## PRICE FORMAT
-- "Do crore pacchees lakh" bolo, digits mat bolo.
-
-## BOOKING TAG (INTERNAL — user ko mat dikhao)
-Jab naam + phone + property + date+time SAB ho, response ke END mein add karo:
+BOOKING TAG (INTERNAL — user ko mat dikhao):
+Jab naam + phone + property + date + time SAHI ho, reply ke END mein add karo:
 [BOOKING:customer_name|customer_phone|property_name|date_YYYY-MM-DD|time_HH:MM]
-Aaj: ${new Date().toISOString().split('T')[0]}.`;
+
+Today: ${new Date().toISOString().split('T')[0]}
+
+DO NOT: mention WhatsApp. DO NOT book without phone number. DO NOT repeat info user already gave.`;
 }
+
+
 
 // ─── Sarvam AI TTS (Hindi) → mulaw audio for Twilio ───
 async function textToSpeechMulaw(text: string): Promise<Buffer> {
@@ -324,66 +289,49 @@ async function getAIResponse(session: StreamSession, userText: string): Promise<
         messagesPayload.splice(1, 0, { role: 'user', content: 'Hello' });
     }
 
+    // ── Call Sarvam-M (native Hindi LLM) ──
+    const sarvamApiKey = process.env.SARVAM_API_KEY;
     let reply = '';
-
-    // Try Sarvam-M first (native Hindi LLM)
-    try {
-        const sarvamApiKey = process.env.SARVAM_API_KEY;
-        if (!sarvamApiKey) throw new Error('No Sarvam API key');
-
-        const sarvamRes = await fetch('https://api.sarvam.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-                'api-subscription-key': sarvamApiKey,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                model: 'sarvam-m',
-                messages: messagesPayload,
-                temperature: 0.7,
-                max_tokens: 100,
-            }),
-        });
-
-        if (!sarvamRes.ok) throw new Error(`Sarvam LLM error: ${sarvamRes.status}`);
-
-        const sarvamData = await sarvamRes.json();
-        reply = sarvamData.choices?.[0]?.message?.content || '';
-        if (reply) {
-            console.log('[LLM] Using Sarvam-M (native Hindi)');
-        }
-    } catch (sarvamErr: any) {
-        console.warn('[LLM] Sarvam-M failed, falling back to Groq:', sarvamErr.message);
-    }
-
-    // Fallback to Groq if Sarvam failed
-    if (!reply) {
+    if (!sarvamApiKey) {
+        console.error('[LLM] SARVAM_API_KEY missing!');
+        reply = 'Maaf kijiye, AI service configure nahi hai. Baad mein call karein.';
+    } else {
         try {
-            const groq = getGroq();
-            const completion = await groq.chat.completions.create({
-                model: 'llama-3.3-70b-versatile',
-                messages: messagesPayload,
-                temperature: 0.7,
-                max_tokens: 100,
+            const sarvamRes = await fetch('https://api.sarvam.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'api-subscription-key': sarvamApiKey,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    model: 'sarvam-m',
+                    messages: messagesPayload,
+                    temperature: 0.4,
+                    max_tokens: 120,
+                }),
             });
-            reply = completion.choices[0]?.message?.content || '';
-            console.log('[LLM] Using Groq/Llama (fallback)');
-        } catch (groqErr: any) {
-            console.error('[LLM] Groq also failed:', groqErr.message);
+
+            if (!sarvamRes.ok) {
+                const errText = await sarvamRes.text();
+                console.error(`[LLM] Sarvam-M error ${sarvamRes.status}:`, errText);
+                reply = 'Maaf kijiye, ek technical problem aa gayi. Thodi der baad call karein.';
+            } else {
+                const sarvamData = await sarvamRes.json();
+                reply = sarvamData.choices?.[0]?.message?.content || '';
+                console.log('[LLM] Sarvam-M reply:', reply.substring(0, 80));
+            }
+        } catch (err: any) {
+            console.error('[LLM] Sarvam-M exception:', err.message);
+            reply = 'Maaf kijiye, network issue aa raha hai. Thodi der baad try karein.';
         }
     }
 
     if (!reply) {
-        reply = 'Maaf kijiye, thoda network issue aa raha hai. Kya aap phir se bol sakte hain?';
+        reply = 'Maaf kijiye, kuch problem aa rahi hai. Ek minute mein wapas try karte hain.';
     }
 
-    // Strip <think> reasoning tags that Sarvam-M sometimes leaks
+    // Strip <think> tags (Sarvam-M sometimes emits these)
     reply = reply.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<think>/g, '').replace(/<\/think>/g, '').trim();
-    if (!reply) {
-        reply = 'Maaf kijiye, thoda network issue aa raha hai. Kya aap phir se bol sakte hain?';
-    }
-
-    // Truncate overly long responses — keep first 2 complete sentences
     const words = reply.split(/\s+/);
     if (words.length > 50) {
         // Find the end of the 2nd sentence
@@ -666,8 +614,10 @@ function connectDeepgram(twilioWs: WebSocket, session: StreamSession) {
                                     await speakToCall(twilioWs, session, reply);
                                 } catch (err) {
                                     console.error('AI response error:', err);
+                                } finally {
+                                    // Always reset — prevents AI from freezing permanently
+                                    session.isProcessing = false;
                                 }
-                                session.isProcessing = false;
                             }
                         }, 1200); // Wait 1.2s of silence before processing
                     }
@@ -690,8 +640,9 @@ function connectDeepgram(twilioWs: WebSocket, session: StreamSession) {
                         await speakToCall(twilioWs, session, reply);
                     } catch (err) {
                         console.error('AI response error:', err);
+                    } finally {
+                        session.isProcessing = false;
                     }
-                    session.isProcessing = false;
                 }
             }
         } catch (err) {

@@ -36,7 +36,7 @@ export const Hero = () => {
                         Introducing PropCall v2.0
                     </div>
 
-                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-white to-white/60 drop-shadow-[0_0_30px_rgba(255,255,255,0.1)] inline-block text-left">
+                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-left w-full pl-2 md:pl-0">
                         <span className="bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,255,255,0.1)]">
                             The AI Agent
                         </span>
@@ -72,6 +72,7 @@ export const Hero = () => {
                             </AnimatePresence>
                         </span>
                     </h1>
+
 
                     <p className="max-w-[800px] text-lg md:text-xl text-slate-400 leading-relaxed">
                         Automate 100% of your real estate inquiries.

@@ -7,7 +7,10 @@ const VoiceResponse = twilio.twiml.VoiceResponse;
 
 // Get server URL for webhooks (needs to be public — use ngrok/localtunnel in dev)
 function getServerUrl(): string {
-    return process.env.SERVER_PUBLIC_URL || `http://localhost:${process.env.PORT || 4000}`;
+    // Render automatically provides RENDER_EXTERNAL_URL — use it if SERVER_PUBLIC_URL not set
+    return process.env.SERVER_PUBLIC_URL
+        || process.env.RENDER_EXTERNAL_URL
+        || `http://localhost:${process.env.PORT || 4000}`;
 }
 
 function getWssHost(): string {
