@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import Groq from 'groq-sdk';
 import { supabase } from '../utils/supabase';
 
 // ─── Types ───
@@ -73,6 +74,41 @@ DO NOT: mention WhatsApp. DO NOT book without phone number. DO NOT repeat info u
 
 
 
+// ── Text preprocessing for natural Hindi TTS ──
+function preprocessForTTS(text: string): string {
+    let t = text;
+    t = t.replace(/\*\*/g, '').replace(/\*/g, '').replace(/\[|\]/g, '');
+    t = t.replace(/₹?\s*(\d+)\.(\d+)\s*Cr/gi, (_, intPart, decPart) => {
+        const crore = numberToHindi(parseInt(intPart));
+        const lakh = numberToHindi(parseInt(decPart) * (decPart.length === 1 ? 10 : 1));
+        return `${crore} crore ${lakh} lakh rupaye`;
+    });
+    t = t.replace(/₹?\s*(\d+)\s*Cr/gi, (_, num) => `${numberToHindi(parseInt(num))} crore rupaye`);
+    t = t.replace(/₹?\s*(\d+)\s*Lakhs?/gi, (_, num) => `${numberToHindi(parseInt(num))} lakh rupaye`);
+    t = t.replace(/(\d+)\s*BHK/gi, (_, num) => `${numberToHindi(parseInt(num))} BHK`);
+    t = t.replace(/₹\s*(\d+)/g, (_, num) => `${numberToHindi(parseInt(num))} rupaye`);
+    t = t.replace(/\s{2,}/g, ' ').trim();
+    return t;
+}
+
+function numberToHindi(n: number): string {
+    const h: Record<number, string> = {
+        0: 'zero', 1: 'ek', 2: 'do', 3: 'teen', 4: 'chaar', 5: 'paanch',
+        6: 'chheh', 7: 'saat', 8: 'aath', 9: 'nau', 10: 'das',
+        11: 'gyaarah', 12: 'baarah', 13: 'terah', 14: 'chaudah', 15: 'pandrah',
+        16: 'solah', 17: 'satrah', 18: 'athaarah', 19: 'unees', 20: 'bees',
+        25: 'pachchees', 30: 'tees', 40: 'chaalees', 42: 'bayaalees',
+        50: 'pachaas', 60: 'saath', 70: 'sattar', 80: 'assi', 90: 'nabbe', 100: 'sau',
+    };
+    if (h[n]) return h[n];
+    if (n < 100) {
+        const tens = Math.floor(n / 10) * 10;
+        const ones = n % 10;
+        return `${h[tens] || tens} ${h[ones] || ones}`;
+    }
+    return String(n);
+}
+
 // ─── Sarvam AI TTS (Hindi) → mulaw audio for Twilio ───
 async function textToSpeechMulaw(text: string): Promise<Buffer> {
     const apiKey = process.env.SARVAM_API_KEY;
@@ -81,6 +117,10 @@ async function textToSpeechMulaw(text: string): Promise<Buffer> {
 
     if (!apiKey) throw new Error('Sarvam API key not found');
 
+    // Preprocess text for natural Hindi pronunciation
+    const ttsText = preprocessForTTS(text);
+    console.log(`[TTS] Preprocessed: "${ttsText.substring(0, 60)}..."`);
+
     const response = await fetch('https://api.sarvam.ai/text-to-speech', {
         method: 'POST',
         headers: {
@@ -88,7 +128,7 @@ async function textToSpeechMulaw(text: string): Promise<Buffer> {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            inputs: [text],
+            inputs: [ttsText],
             target_language_code: 'hi-IN',
             speaker: speaker,
             model: model,
@@ -172,7 +212,12 @@ function linearToMulaw(sample: number): number {
     return ~(sign | (exponent << 4) | mantissa) & 0xFF;
 }
 
-// ─── AI Chat via Sarvam-M (Hindi native) with Groq fallback ───
+// ─── AI Chat via Groq (fast, instruction-following LLM) ───
+let groqClient: Groq | null = null;
+function getGroq(): Groq {
+    if (!groqClient) groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    return groqClient;
+}
 async function getAIResponse(session: StreamSession, userText: string): Promise<string> {
     session.conversationHistory.push({ role: 'user', content: userText });
 
@@ -289,52 +334,52 @@ async function getAIResponse(session: StreamSession, userText: string): Promise<
         messagesPayload.splice(1, 0, { role: 'user', content: 'Hello' });
     }
 
-    // ── Call Sarvam-M (native Hindi LLM) ──
-    const sarvamApiKey = process.env.SARVAM_API_KEY;
+    // ── Call Groq (fast, instruction-following LLM — matching browser chat) ──
     let reply = '';
-    if (!sarvamApiKey) {
-        console.error('[LLM] SARVAM_API_KEY missing!');
-        reply = 'Maaf kijiye, AI service configure nahi hai. Baad mein call karein.';
-    } else {
-        try {
-            const sarvamRes = await fetch('https://api.sarvam.ai/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'api-subscription-key': sarvamApiKey,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    model: 'sarvam-m',
-                    messages: messagesPayload,
-                    temperature: 0.4,
-                    max_tokens: 120,
-                }),
-            });
-
-            if (!sarvamRes.ok) {
-                const errText = await sarvamRes.text();
-                console.error(`[LLM] Sarvam-M error ${sarvamRes.status}:`, errText);
-                reply = 'Maaf kijiye, ek technical problem aa gayi. Thodi der baad call karein.';
-            } else {
-                const sarvamData = await sarvamRes.json();
-                reply = sarvamData.choices?.[0]?.message?.content || '';
-                console.log('[LLM] Sarvam-M reply:', reply.substring(0, 80));
-            }
-        } catch (err: any) {
-            console.error('[LLM] Sarvam-M exception:', err.message);
-            reply = 'Maaf kijiye, network issue aa raha hai. Thodi der baad try karein.';
-        }
+    try {
+        const groq = getGroq();
+        const completion = await groq.chat.completions.create({
+            model: 'llama-3.3-70b-versatile',
+            messages: messagesPayload,
+            temperature: 0.3,
+            max_tokens: 100,
+        });
+        reply = completion.choices?.[0]?.message?.content || '';
+        console.log('[LLM] Groq reply:', reply.substring(0, 80));
+    } catch (err: any) {
+        console.error('[LLM] Groq exception:', err.message);
+        reply = 'Maaf kijiye, network issue aa raha hai. Thodi der baad try karein.';
     }
 
     if (!reply) {
         reply = 'Maaf kijiye, kuch problem aa rahi hai. Ek minute mein wapas try karte hain.';
     }
 
-    // Strip <think> tags (Sarvam-M sometimes emits these)
-    reply = reply.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/<think>/g, '').replace(/<\/think>/g, '').trim();
+    // Safety filter: strip any reasoning that leaked through
+    const reasoningPatterns = [
+        /^okay[,\s]+/i,
+        /^the user (said|asked|mentioned|wants|is|has)\b/i,
+        /^i (need|should|will|must) (to |now |check |find |look )?/i,
+        /^let me /i,
+        /^so the user\b/i,
+        /^since (the user|they)\b/i,
+        /^based on\b/i,
+        /^according to\b/i,
+        /^note that\b/i,
+        /^looking at\b/i,
+        /^checking\b/i,
+    ];
+    const isLeak = reasoningPatterns.some(p => p.test(reply));
+    if (isLeak) {
+        console.warn('[FILTER] Reasoning leak caught:', reply.substring(0, 60));
+        const lines = reply.split('\n').filter(l => l.trim());
+        reply = lines.find(l => !reasoningPatterns.some(p => p.test(l.trim()))) || '';
+        if (!reply) reply = 'Maaf kijiye, ek baar phir bolenge?';
+    }
+
+    // Truncate overly long responses
     const words = reply.split(/\s+/);
     if (words.length > 50) {
-        // Find the end of the 2nd sentence
         let cutPoint = reply.length;
         let sentenceCount = 0;
         for (let i = 0; i < reply.length; i++) {
@@ -349,12 +394,10 @@ async function getAIResponse(session: StreamSession, userText: string): Promise<
         reply = reply.substring(0, cutPoint).trim();
     }
 
-
-
     // Detect and handle booking
     const bookingMatch = reply.match(/\[BOOKING:(.+?)\]/);
     reply = reply.replace(/\s*\[BOOKING:[^\]]*\]?/g, '').trim();
-    if (!reply) reply = 'Done! Aapki booking ho gayi hai.';
+    if (!reply) reply = 'Accha ji, thodi der mein batata hu.';
 
     if (bookingMatch && !session.appointmentBooked) {
         const parts = bookingMatch[1].split('|');

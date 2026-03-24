@@ -132,12 +132,10 @@ router.post('/chat', async (req: Request, res: Response) => {
         }
         const history = conversations.get(session)!;
 
-        // Detect city BEFORE adding the new user message (from prior history)
+        // Add user message to history FIRST, then detect city (so first mention is caught)
+        history.push({ role: 'user', content: message });
         const detectedCity = detectCityFromHistory(history);
         console.log('[CITY-FILTER] Detected city:', detectedCity || 'none yet');
-
-        // Add user message to history
-        history.push({ role: 'user', content: message });
 
         // Fetch properties from Supabase — pre-filtered by detected city
         let inventoryContext = '';
@@ -353,6 +351,56 @@ router.post('/reset', (req: Request, res: Response) => {
     conversations.delete(session);
     res.json({ success: true, message: 'Conversation reset' });
 });
+// ── Text preprocessing for natural Hindi TTS ──
+function preprocessForTTS(text: string): string {
+    let t = text;
+
+    // Remove markdown, brackets, special chars
+    t = t.replace(/\*\*/g, '').replace(/\*/g, '').replace(/\[|\]/g, '');
+
+    // Convert ₹X.YZ Cr → spoken Hindi
+    t = t.replace(/₹?\s*(\d+)\.(\d+)\s*Cr/gi, (_, intPart, decPart) => {
+        const crore = numberToHindi(parseInt(intPart));
+        const lakh = numberToHindi(parseInt(decPart) * (decPart.length === 1 ? 10 : 1));
+        return `${crore} crore ${lakh} lakh rupaye`;
+    });
+    t = t.replace(/₹?\s*(\d+)\s*Cr/gi, (_, num) => `${numberToHindi(parseInt(num))} crore rupaye`);
+
+    // Convert ₹X Lakhs → spoken Hindi
+    t = t.replace(/₹?\s*(\d+)\s*Lakhs?/gi, (_, num) => `${numberToHindi(parseInt(num))} lakh rupaye`);
+
+    // Convert XBHK → "X BHK"
+    t = t.replace(/(\d+)\s*BHK/gi, (_, num) => `${numberToHindi(parseInt(num))} BHK`);
+
+    // Convert standalone ₹ + number
+    t = t.replace(/₹\s*(\d+)/g, (_, num) => `${numberToHindi(parseInt(num))} rupaye`);
+
+    // Clean up extra spaces
+    t = t.replace(/\s{2,}/g, ' ').trim();
+
+    return t;
+}
+
+function numberToHindi(n: number): string {
+    const hindiNumbers: Record<number, string> = {
+        0: 'zero', 1: 'ek', 2: 'do', 3: 'teen', 4: 'chaar', 5: 'paanch',
+        6: 'chheh', 7: 'saat', 8: 'aath', 9: 'nau', 10: 'das',
+        11: 'gyaarah', 12: 'baarah', 13: 'terah', 14: 'chaudah', 15: 'pandrah',
+        16: 'solah', 17: 'satrah', 18: 'athaarah', 19: 'unees', 20: 'bees',
+        21: 'ikkees', 22: 'baees', 23: 'teis', 24: 'chaubees', 25: 'pachchees',
+        30: 'tees', 35: 'paintees', 40: 'chaalees', 42: 'bayaalees',
+        45: 'paintaalees', 50: 'pachaas', 55: 'pachpan', 60: 'saath',
+        65: 'painsath', 70: 'sattar', 75: 'pachhattar', 80: 'assi',
+        85: 'pachaasi', 90: 'nabbe', 95: 'pachaanve', 100: 'sau',
+    };
+    if (hindiNumbers[n]) return hindiNumbers[n];
+    if (n < 100) {
+        const tens = Math.floor(n / 10) * 10;
+        const ones = n % 10;
+        return `${hindiNumbers[tens] || tens} ${hindiNumbers[ones] || ones}`;
+    }
+    return String(n);
+}
 
 // POST /api/ai/tts — Convert text to Hindi speech using Sarvam AI
 router.post('/tts', async (req: Request, res: Response) => {
@@ -370,6 +418,10 @@ router.post('/tts', async (req: Request, res: Response) => {
 
         console.log(`[TTS] Generating Hindi audio (Speaker: ${speaker})`);
 
+        // Preprocess text for natural Hindi pronunciation
+        const ttsText = preprocessForTTS(text);
+        console.log(`[TTS] Preprocessed: "${ttsText.substring(0, 80)}..."`);
+
         const response = await fetch('https://api.sarvam.ai/text-to-speech', {
             method: 'POST',
             headers: {
@@ -377,7 +429,7 @@ router.post('/tts', async (req: Request, res: Response) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                inputs: [text],
+                inputs: [ttsText],
                 target_language_code: 'hi-IN',
                 speaker,
                 model,
