@@ -5,26 +5,27 @@ import { useState, useEffect } from 'react';
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import {
     LayoutDashboard,
-    Users,
     Building2,
     BarChart3,
     Megaphone,
     Phone,
+    PhoneCall,
     MessageSquare,
     LogOut,
     Menu,
     X,
     ChevronRight,
     User as UserIcon,
+    Bot
 } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
 const navItems = [
     { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Leads', href: '/dashboard/leads', icon: Users },
+    { label: 'AI Settings', href: '/dashboard/ai-settings', icon: Bot },
+    { label: 'Auto Dialer', href: '/dashboard/dialer', icon: PhoneCall },
+    { label: 'Live Calls', href: '/dashboard/calls', icon: Phone },
     { label: 'Properties', href: '/dashboard/properties', icon: Building2 },
-    { label: 'Campaigns', href: '/dashboard/campaigns', icon: Megaphone },
-    { label: 'Calls', href: '/dashboard/calls', icon: Phone },
     { label: 'WhatsApp', href: '/dashboard/whatsapp', icon: MessageSquare },
     { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { label: 'Profile', href: '/dashboard/profile', icon: UserIcon },
