@@ -26,7 +26,6 @@ const navItems = [
     { label: 'Auto Dialer', href: '/dashboard/dialer', icon: PhoneCall },
     { label: 'Live Calls', href: '/dashboard/calls', icon: Phone },
     { label: 'Properties', href: '/dashboard/properties', icon: Building2 },
-    { label: 'WhatsApp', href: '/dashboard/whatsapp', icon: MessageSquare },
     { label: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { label: 'Profile', href: '/dashboard/profile', icon: UserIcon },
 ];

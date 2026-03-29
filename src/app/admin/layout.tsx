@@ -31,6 +31,11 @@ export default function AdminLayout({
     const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
+    // Don't render sidebar on login page
+    if (pathname === '/admin/login') {
+        return <>{children}</>;
+    }
+
     return (
         <div className="min-h-screen bg-slate-950 text-white flex">
             {/* Mobile Overlay */}

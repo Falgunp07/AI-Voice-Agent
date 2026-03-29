@@ -7,14 +7,6 @@ export default function AISettingsPage() {
       </div>
 
       <div className="p-6 rounded-2xl bg-slate-900 border border-white/5 space-y-6">
-        <div>
-          <label className="text-sm font-medium">Agent Persona (System Prompt)</label>
-          <textarea 
-            className="mt-2 w-full h-48 bg-slate-950 border border-white/10 rounded-xl p-4 text-sm text-slate-300"
-            placeholder="Identity: You are an expert property consultant..."
-            defaultValue={`IDENTITY: Tum "Arjun" ho — ek experienced property consultant. Phone call pe buyer se baat kar rahe ho. Hindi mein bolo.`}
-          />
-        </div>
         
         <div className="grid md:grid-cols-2 gap-6">
           <div>

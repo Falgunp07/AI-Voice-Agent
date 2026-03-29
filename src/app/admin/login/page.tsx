@@ -1,12 +1,11 @@
 'use client';
 import { useState } from 'react';
-import { createSupabaseBrowserClient } from '@/lib/supabase-browser';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
-export default function LoginPage() {
-    const [email, setEmail] = useState('');
+export default function AdminLoginPage() {
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -18,58 +17,55 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
 
-        const supabase = createSupabaseBrowserClient();
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        // Hardcoded admin check
+        const isValid = 
+            (username === 'Falgun' && password === 'Falgun') ||
+            (username === 'Yash' && password === 'Yash');
 
-        if (error) {
-            setError(error.message);
-            setLoading(false);
-        } else {
-            router.push('/dashboard');
+        if (isValid) {
+            // Set simple cookie for admin auth
+            document.cookie = `admin_auth=true; path=/; max-age=86400`; // 1 day
+            document.cookie = `admin_user=${username}; path=/; max-age=86400`;
+            router.push('/admin/ai-playground');
             router.refresh();
+        } else {
+            setError('Invalid master credentials. Access denied.');
+            setLoading(false);
         }
     };
 
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-center px-6 relative overflow-hidden">
-            {/* Background Effects */}
-            <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-indigo-600/15 rounded-full blur-[150px] pointer-events-none" />
-            <div className="absolute bottom-1/4 right-1/3 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
+            <div className="absolute top-1/4 right-1/3 w-[500px] h-[500px] bg-red-600/10 rounded-full blur-[150px] pointer-events-none" />
 
             <div className="w-full max-w-md relative z-10">
-                {/* Logo */}
                 <div className="text-center mb-10">
-                    <Link href="/" className="text-3xl font-bold tracking-tighter font-[family-name:var(--font-space)]">
-                        PropCall<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">.ai</span>
-                    </Link>
-                    <p className="text-slate-400 mt-3 text-lg">Welcome back</p>
+                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-900 border border-white/10 mb-6 shadow-2xl">
+                        <Lock className="w-8 h-8 text-indigo-400" />
+                    </div>
+                    <h1 className="text-3xl font-bold tracking-tighter">Admin Portal</h1>
+                    <p className="text-slate-400 mt-2">Restricted Area</p>
                 </div>
 
-                {/* Form Card */}
                 <div className="rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl p-8 shadow-2xl">
                     <form onSubmit={handleLogin} className="space-y-5">
-                        {/* Email */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">Admin Username</label>
                             <div className="relative">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                 <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="you@company.com"
+                                    type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="Enter your username"
                                     required
                                     className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all"
                                 />
                             </div>
                         </div>
 
-                        {/* Password */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">Master Password</label>
                             <div className="relative">
                                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                 <input
@@ -90,50 +86,27 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        {/* Forgot Password */}
-                        <div className="text-right">
-                            <Link href="/forgot-password" className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors">
-                                Forgot password?
-                            </Link>
-                        </div>
-
-                        {/* Error */}
                         {error && (
                             <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
                                 {error}
                             </div>
                         )}
 
-                        {/* Submit */}
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold hover:shadow-lg hover:shadow-indigo-500/20 hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+                            className="w-full py-3 rounded-xl bg-white text-slate-900 font-semibold hover:bg-slate-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                             {loading ? (
-                                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <div className="w-5 h-5 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin" />
                             ) : (
                                 <>
-                                    Sign In
+                                    Log In as Admin
                                     <ArrowRight className="w-4 h-4" />
                                 </>
                             )}
                         </button>
                     </form>
-
-                    {/* Divider */}
-                    <div className="mt-8 pt-6 border-t border-white/10 text-center space-y-4">
-                        <p className="text-slate-400 text-sm">
-                            Don&apos;t have an account?{' '}
-                            <Link href="/signup" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
-                                Sign up free
-                            </Link>
-                        </p>
-                        <Link href="/admin/login" className="inline-flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors">
-                            <Lock className="w-3 h-3" />
-                            Admin Login
-                        </Link>
-                    </div>
                 </div>
             </div>
         </div>

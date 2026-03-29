@@ -97,16 +97,16 @@ export default function SignupPage() {
                 {/* Form Card */}
                 <div className="rounded-3xl border border-white/10 bg-slate-900/50 backdrop-blur-xl p-8 shadow-2xl">
                     <form onSubmit={handleSignup} className="space-y-5">
-                        {/* Name */}
+                        {/* Merchant Name */}
                         <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Full Name</label>
+                            <label className="block text-sm font-medium text-slate-300 mb-2">Merchant Name</label>
                             <div className="relative">
                                 <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                 <input
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
-                                    placeholder="John Doe"
+                                    placeholder="Enter your agency name"
                                     required
                                     className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-800/50 border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all"
                                 />
@@ -193,13 +193,17 @@ export default function SignupPage() {
                     </form>
 
                     {/* Divider */}
-                    <div className="mt-8 pt-6 border-t border-white/10 text-center">
+                    <div className="mt-8 pt-6 border-t border-white/10 text-center space-y-4">
                         <p className="text-slate-400 text-sm">
                             Already have an account?{' '}
                             <Link href="/login" className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
                                 Sign in
                             </Link>
                         </p>
+                        <Link href="/admin/login" className="inline-flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors">
+                            <Lock className="w-3 h-3" />
+                            Admin Login
+                        </Link>
                     </div>
                 </div>
             </div>

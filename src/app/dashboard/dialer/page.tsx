@@ -14,47 +14,21 @@ export default function DialerPage() {
       <div className="grid md:grid-cols-3 gap-6">
         <div className="p-6 rounded-2xl bg-slate-900 border border-white/5">
           <h3 className="text-slate-400 text-sm font-medium mb-2">Calls Dispatched Today</h3>
-          <p className="text-3xl font-semibold">142</p>
+          <p className="text-3xl font-semibold">0</p>
         </div>
         <div className="p-6 rounded-2xl bg-slate-900 border border-white/5">
           <h3 className="text-slate-400 text-sm font-medium mb-2">Answer Rate</h3>
-          <p className="text-3xl font-semibold">41%</p>
+          <p className="text-3xl font-semibold">0%</p>
         </div>
         <div className="p-6 rounded-2xl bg-slate-900 border border-white/5">
           <h3 className="text-slate-400 text-sm font-medium mb-2">Bookings Generated</h3>
-          <p className="text-3xl font-semibold text-emerald-400">12</p>
+          <p className="text-3xl font-semibold text-emerald-400">0</p>
         </div>
       </div>
 
-      <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-800/50">
-            <tr>
-              <th className="px-6 py-4 font-medium text-slate-400">Campaign Name</th>
-              <th className="px-6 py-4 font-medium text-slate-400">Status</th>
-              <th className="px-6 py-4 font-medium text-slate-400">Progress</th>
-              <th className="px-6 py-4 font-medium text-slate-400">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            <tr>
-              <td className="px-6 py-4">Weekend Buyers Follow-up</td>
-              <td className="px-6 py-4">
-                <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-medium">Running</span>
-              </td>
-              <td className="px-6 py-4 text-slate-300">45 / 100 calls</td>
-              <td className="px-6 py-4 text-indigo-400 cursor-pointer hover:text-indigo-300 font-medium">Pause</td>
-            </tr>
-            <tr>
-              <td className="px-6 py-4">Cold Lead Re-engagement</td>
-              <td className="px-6 py-4">
-                <span className="px-2.5 py-1 bg-slate-500/10 text-slate-400 rounded-lg text-xs font-medium">Completed</span>
-              </td>
-              <td className="px-6 py-4 text-slate-300">500 / 500 calls</td>
-              <td className="px-6 py-4 text-indigo-400 cursor-pointer hover:text-indigo-300 font-medium">View Results</td>
-            </tr>
-          </tbody>
-        </table>
+      <div className="bg-slate-900 border border-white/5 rounded-2xl overflow-hidden p-12 text-center">
+        <p className="text-slate-400 font-medium">No active campaigns</p>
+        <p className="text-slate-500 text-sm mt-1">Upload a contact list to start auto-dialing your leads.</p>
       </div>
     </div>
   );

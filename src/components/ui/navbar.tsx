@@ -61,21 +61,16 @@ export const Navbar = () => {
                                     href="/dashboard"
                                     className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-indigo-500/20 transition-all transform hover:-translate-y-0.5"
                                 >
-                                    Go to App
+                                    Dashboard
                                 </Link>
                             </>
                         ) : (
-                            <>
-                                <Link href="/login" className="hidden md:block text-sm font-medium text-white hover:text-indigo-300 transition-colors">
-                                    Sign In
-                                </Link>
-                                <Link
-                                    href="/signup"
-                                    className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-indigo-500/20 transition-all transform hover:-translate-y-0.5"
-                                >
-                                    Get Started
-                                </Link>
-                            </>
+                            <Link
+                                href="/login"
+                                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-lg hover:shadow-lg hover:shadow-indigo-500/20 transition-all transform hover:-translate-y-0.5"
+                            >
+                                Login
+                            </Link>
                         )
                     )}
                 </div>
